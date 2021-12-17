@@ -4,15 +4,56 @@ const { Product, Category, Tag, ProductTag } = require('../../models');
 // The `/api/products` endpoint
 
 // get all products
-router.get('/', (req, res) => {
+router.get('/', ({body}, res) => {
   // find all products
   // be sure to include its associated Category and Tag data
+  Product.findAll({
+    include: [
+      {
+        model: Category,
+        attributes: ["category_name"]
+      },
+      {
+        model: Tag,
+        attributes: ["tag_name"]
+      }
+    ]
+  }).then(dbData => res.json(dbData))
+  .catch(err => {
+    console.log(err);
+    res.status(500).json(err);
+  })
 });
 
 // get one product
-router.get('/:id', (req, res) => {
+router.get('/:id', ({body}, res) => {
   // find a single product by its `id`
   // be sure to include its associated Category and Tag data
+  Product.findOne({
+    where: {
+      id: body.id
+    },
+    include: [
+      {
+        model: Category,
+        attributes: ["category_name"]
+      },
+      {
+        model: Tag,
+        attributes: ["tag_name"]
+      }
+    ]
+  }).then(dbData => {
+    if (!dbData) {
+      res.status(404).json({ message: 'No Product found with this id' });
+      return;
+    }
+    res.json(dbData);
+  })
+  .catch(err => {
+    console.log(err);
+    res.status(500).json(err);
+  })
 });
 
 // create new product
@@ -28,6 +69,7 @@ router.post('/', (req, res) => {
   Product.create(req.body)
     .then((product) => {
       // if there's product tags, we need to create pairings to bulk create in the ProductTag model
+      console.log( "req.body", req.body);
       if (req.body.tagIds.length) {
         const productTagIdArr = req.body.tagIds.map((tag_id) => {
           return {
@@ -89,8 +131,25 @@ router.put('/:id', (req, res) => {
     });
 });
 
-router.delete('/:id', (req, res) => {
+router.delete('/:id', ({body}, res) => {
   // delete one product by its `id` value
+  Product.destroy(
+    {
+      where: {
+        id: body.id
+      }
+    }
+  ).then(dbData => {
+    if (!dbData) {
+      res.status(404).json({ message: 'No Product found with this id' });
+      return;
+    }
+    res.json(dbData);
+  })
+  .catch(err => {
+    console.log(err);
+    res.status(500).json(err);
+  }); 
 });
 
 module.exports = router;
